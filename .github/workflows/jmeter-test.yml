@@ -1,4 +1,4 @@
-name: Run JMeter Test
+name: Run JMeter Test with Allure
 
 on:
   workflow_dispatch:
@@ -6,26 +6,22 @@ on:
     branches:
       - main
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: "pages"
-  cancel-in-progress: true
-
 jobs:
   performance-test:
     runs-on: ubuntu-latest
 
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+
+      - name: Clean Previous Reports
+        run: |
+          echo "Cleaning previous reports..."
+          rm -rf allure-results
+          rm -rf allure-report
+          rm -rf artifacts
+          rm -f *.jtl
+          rm -f jmeter.log
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -33,38 +29,30 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Download Apache JMeter
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Taurus
+        run: pip install bzt
+
+      - name: Install Allure CLI
         run: |
-          JMETER_VERSION=5.6.3
-          wget https://archive.apache.org/dist/jmeter/binaries/apache-jmeter-${JMETER_VERSION}.tgz
-          tar -xzf apache-jmeter-${JMETER_VERSION}.tgz
-          echo "$PWD/apache-jmeter-${JMETER_VERSION}/bin" >> $GITHUB_PATH
-
-      - name: Verify JMeter Installation
-        run: jmeter --version
-
-      - name: Create Results Directory
-        run: mkdir -p results
+          wget https://github.com/allure-framework/allure2/releases/latest/download/allure-2.34.1.tgz
+          tar -xzf allure-2.34.1.tgz
+          echo "$PWD/allure-2.34.1/bin" >> $GITHUB_PATH
 
       - name: Run JMeter Test
         run: |
-          jmeter -n \
-            -t Krofturg.jmx \
-            -l results/results.jtl \
-            -e \
-            -o results/report
+          bzt Krofturg.jmx
 
-      - name: Upload JTL Results
+      - name: Generate Allure Report
+        run: |
+          allure generate allure-results --clean -o allure-report
+
+      - name: Upload Allure Report
         uses: actions/upload-artifact@v4
         with:
-          name: jmeter-results
-          path: results/results.jtl
-
-      - name: Upload Pages Artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: results/report
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          name: allure-report
+          path: allure-report
