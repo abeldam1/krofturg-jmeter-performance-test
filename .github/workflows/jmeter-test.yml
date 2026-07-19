@@ -1,0 +1,28 @@
+name: JMeter Performance Test
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  jm-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Run JMeter Test
+        uses: rbhadti96/jmeter-action@v1.0.0
+        with:
+          test-file: 'Krofturg.jmx'
+          report-output-folder: 'jmeter-reports'
+
+      - name: Upload JMeter HTML Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: jmeter-performance-report
+          path: jmeter-reports/
