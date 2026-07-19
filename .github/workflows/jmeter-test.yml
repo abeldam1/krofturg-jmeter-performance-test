@@ -1,4 +1,4 @@
-name: JMeter Performance Test
+name: Run JMeter Test
 
 on:
   push:
@@ -7,34 +7,48 @@ on:
   workflow_dispatch:
 
 jobs:
-  jm-test:
+  jmeter-test:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Code
-        uses: actions/actions/checkout@v4
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: Set up Java
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
+          distribution: temurin
           java-version: '17'
 
-      - name: Install JMeter
+      - name: Download Apache JMeter
         run: |
-          sudo apt-get update
-          sudo apt-get install -y jmeter
+          JMETER_VERSION=5.6.3
+          wget https://archive.apache.org/dist/jmeter/binaries/apache-jmeter-${JMETER_VERSION}.tgz
+          tar -xzf apache-jmeter-${JMETER_VERSION}.tgz
+          echo "$PWD/apache-jmeter-${JMETER_VERSION}/bin" >> $GITHUB_PATH
 
-      # Updated to use your specific file: Krofturg.jmx
+      - name: Verify JMeter Installation
+        run: jmeter --version
+
+      - name: Create Results Directory
+        run: mkdir -p results
+
       - name: Run JMeter Test
         run: |
-          mkdir jmeter-reports
-          jmeter -n -t Krofturg.jmx -l results.jtl -e -o jmeter-reports
+          jmeter -n \
+            -t Krofturg.jmx \
+            -l results/results.jtl \
+            -e \
+            -o results/report
 
-      # This ensures the HTML report downloads even if the test fails
-      - name: Upload JMeter HTML Report
+      - name: Upload JTL Results
         uses: actions/upload-artifact@v4
-        if: always()
         with:
-          name: jmeter-performance-report
-          path: jmeter-reports/
+          name: jmeter-results
+          path: results/results.jtl
+
+      - name: Upload HTML Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: jmeter-html-report
+          path: results/report
