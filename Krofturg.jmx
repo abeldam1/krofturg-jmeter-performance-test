@@ -7,13 +7,73 @@
       </elementProp>
     </TestPlan>
     <hashTree>
+      <SetupThreadGroup guiclass="SetupThreadGroupGui" testclass="SetupThreadGroup" testname="setUp Thread Group">
+        <intProp name="ThreadGroup.num_threads">1</intProp>
+        <intProp name="ThreadGroup.ramp_time">1</intProp>
+        <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
+        <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
+        <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller">
+          <stringProp name="LoopController.loops">1</stringProp>
+          <boolProp name="LoopController.continue_forever">false</boolProp>
+        </elementProp>
+      </SetupThreadGroup>
+      <hashTree>
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Login">
+          <stringProp name="TestPlan.comments">Created from cURL on 2026-07-18T20:39:34.4405265</stringProp>
+          <stringProp name="HTTPSampler.domain">krofturg-vlrm-backend-ce6210296b4e.herokuapp.com</stringProp>
+          <stringProp name="HTTPSampler.protocol">https</stringProp>
+          <stringProp name="HTTPSampler.path">/api/auth/client/login</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <stringProp name="HTTPSampler.method">POST</stringProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+          <boolProp name="HTTPSampler.postBodyRaw">false</boolProp>
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="User Defined Variables">
+            <collectionProp name="Arguments.arguments">
+              <elementProp name="" elementType="HTTPArgument">
+                <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                <stringProp name="Argument.value">{
+    &quot;email&quot;: &quot;nomsouzoanya@yahoo.co.uk&quot;,
+    &quot;password&quot;: &quot;vicecity&quot;
+}</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+                <boolProp name="HTTPArgument.use_equals">true</boolProp>
+              </elementProp>
+            </collectionProp>
+          </elementProp>
+          <stringProp name="HTTPSampler.implementation">HttpClient4</stringProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP HeaderManager">
+            <collectionProp name="HeaderManager.headers">
+              <elementProp name="Content-Type" elementType="Header">
+                <stringProp name="Header.name">Content-Type</stringProp>
+                <stringProp name="Header.value">application/json</stringProp>
+              </elementProp>
+            </collectionProp>
+            <stringProp name="TestPlan.comments">Created from cURL on 2026-07-18T20:39:34.4405265</stringProp>
+          </HeaderManager>
+          <hashTree/>
+          <JSONPostProcessor guiclass="JSONPostProcessorGui" testclass="JSONPostProcessor" testname="JSON Extractor">
+            <stringProp name="JSONPostProcessor.referenceNames">token</stringProp>
+            <stringProp name="JSONPostProcessor.jsonPathExprs">$.data.token</stringProp>
+            <stringProp name="JSONPostProcessor.match_numbers">1</stringProp>
+            <stringProp name="JSONPostProcessor.defaultValues">NOT_FOUND</stringProp>
+          </JSONPostProcessor>
+          <hashTree/>
+          <JSR223PostProcessor guiclass="TestBeanGUI" testclass="JSR223PostProcessor" testname="JSR223 PostProcessor">
+            <stringProp name="cacheKey">true</stringProp>
+            <stringProp name="filename"></stringProp>
+            <stringProp name="parameters"></stringProp>
+            <stringProp name="script">props.put(&quot;token&quot;, vars.get(&quot;token&quot;))</stringProp>
+            <stringProp name="scriptLanguage">groovy</stringProp>
+          </JSR223PostProcessor>
+          <hashTree/>
+        </hashTree>
+      </hashTree>
       <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="Thread Group">
-        <intProp name="ThreadGroup.num_threads">1000</intProp>
+        <intProp name="ThreadGroup.num_threads">100</intProp>
         <intProp name="ThreadGroup.ramp_time">300</intProp>
-<<<<<<< HEAD
         <longProp name="ThreadGroup.duration">1200</longProp>
-=======
->>>>>>> e5ddd93d301fc4d525bdbb2bd2c9223b796f7165
         <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
         <boolProp name="ThreadGroup.scheduler">true</boolProp>
         <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
@@ -23,7 +83,70 @@
         </elementProp>
       </ThreadGroup>
       <hashTree>
-        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Trial Signup">
+        <JSR223PreProcessor guiclass="TestBeanGUI" testclass="JSR223PreProcessor" testname="JSR223 PreProcessor">
+          <stringProp name="scriptLanguage">groovy</stringProp>
+          <stringProp name="parameters"></stringProp>
+          <stringProp name="filename"></stringProp>
+          <stringProp name="cacheKey">true</stringProp>
+          <stringProp name="script">import java.net.HttpURLConnection
+import groovy.json.JsonOutput
+import groovy.json.JsonSlurper
+
+// Refresh after 2 minutes
+long REFRESH_INTERVAL = 120000L
+
+long now = System.currentTimeMillis()
+
+// Synchronize so only one thread refreshes
+synchronized(props) {
+
+    long lastLogin = (props.get(&quot;lastLoginTime&quot;) ?: &quot;0&quot;) as long
+
+    if ((now - lastLogin) &gt;= REFRESH_INTERVAL) {
+
+        log.info(&quot;Refreshing authentication token...&quot;)
+
+        def conn = (HttpURLConnection) new URL(
+            &quot;https://krofturg-vlrm-backend-ce6210296b4e.herokuapp.com/api/auth/client/login&quot;
+        ).openConnection()
+
+        conn.setRequestMethod(&quot;POST&quot;)
+        conn.setDoOutput(true)
+        conn.setRequestProperty(&quot;Content-Type&quot;, &quot;application/json&quot;)
+
+        def body = [
+            email: &quot;nomsouzoanya@yahoo.co.uk&quot;,
+            password: &quot;vicecity&quot;
+        ]
+
+        conn.outputStream.withWriter(&quot;UTF-8&quot;) {
+            it &lt;&lt; JsonOutput.toJson(body)
+        }
+
+        if (conn.responseCode == 200) {
+
+            def response = conn.inputStream.getText(&quot;UTF-8&quot;)
+            def json = new JsonSlurper().parseText(response)
+
+            props.put(&quot;token&quot;, json.data.token.toString())
+            props.put(&quot;refreshToken&quot;, json.data.refreshToken.toString())
+            props.put(&quot;lastLoginTime&quot;, System.currentTimeMillis().toString())
+
+            log.info(&quot;Token refreshed successfully.&quot;)
+
+        } else {
+
+            log.error(&quot;Token refresh failed. HTTP &quot; + conn.responseCode)
+
+        }
+    }
+}
+
+// Make the current token available as a JMeter variable
+vars.put(&quot;token&quot;, props.get(&quot;token&quot;))</stringProp>
+        </JSR223PreProcessor>
+        <hashTree/>
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Trial Signup" enabled="true">
           <stringProp name="TestPlan.comments">Created from cURL on 2026-07-18T20:39:01.8634953</stringProp>
           <stringProp name="HTTPSampler.domain">krofturg-vlrm-backend-ce6210296b4e.herokuapp.com</stringProp>
           <stringProp name="HTTPSampler.protocol">https</stringProp>
@@ -53,7 +176,7 @@
           <stringProp name="HTTPSampler.implementation">HttpClient4</stringProp>
         </HTTPSamplerProxy>
         <hashTree>
-          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP HeaderManager">
+          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP HeaderManager" enabled="true">
             <collectionProp name="HeaderManager.headers">
               <elementProp name="Content-Type" elementType="Header">
                 <stringProp name="Header.name">Content-Type</stringProp>
@@ -63,7 +186,7 @@
             <stringProp name="TestPlan.comments">Created from cURL on 2026-07-18T20:39:01.8654953</stringProp>
           </HeaderManager>
           <hashTree/>
-          <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Response Assertion">
+          <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Response Assertion" enabled="true">
             <collectionProp name="Asserion.test_strings">
               <stringProp name="51508">400</stringProp>
             </collectionProp>
@@ -74,50 +197,7 @@
           </ResponseAssertion>
           <hashTree/>
         </hashTree>
-        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Login">
-          <stringProp name="TestPlan.comments">Created from cURL on 2026-07-18T20:39:34.4405265</stringProp>
-          <stringProp name="HTTPSampler.domain">krofturg-vlrm-backend-ce6210296b4e.herokuapp.com</stringProp>
-          <stringProp name="HTTPSampler.protocol">https</stringProp>
-          <stringProp name="HTTPSampler.path">/api/auth/client/login</stringProp>
-          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
-          <stringProp name="HTTPSampler.method">POST</stringProp>
-          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
-          <boolProp name="HTTPSampler.postBodyRaw">false</boolProp>
-          <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="User Defined Variables">
-            <collectionProp name="Arguments.arguments">
-              <elementProp name="" elementType="HTTPArgument">
-                <boolProp name="HTTPArgument.always_encode">false</boolProp>
-                <stringProp name="Argument.value">{
-    &quot;email&quot;: &quot;nomsouzoanya@yahoo.co.uk&quot;,
-    &quot;password&quot;: &quot;vicecity&quot;
-}</stringProp>
-                <stringProp name="Argument.metadata">=</stringProp>
-                <boolProp name="HTTPArgument.use_equals">true</boolProp>
-              </elementProp>
-            </collectionProp>
-          </elementProp>
-          <stringProp name="HTTPSampler.implementation">HttpClient4</stringProp>
-        </HTTPSamplerProxy>
-        <hashTree>
-          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP HeaderManager" enabled="true">
-            <collectionProp name="HeaderManager.headers">
-              <elementProp name="Content-Type" elementType="Header">
-                <stringProp name="Header.name">Content-Type</stringProp>
-                <stringProp name="Header.value">application/json</stringProp>
-              </elementProp>
-            </collectionProp>
-            <stringProp name="TestPlan.comments">Created from cURL on 2026-07-18T20:39:34.4405265</stringProp>
-          </HeaderManager>
-          <hashTree/>
-          <JSONPostProcessor guiclass="JSONPostProcessorGui" testclass="JSONPostProcessor" testname="JSON Extractor">
-            <stringProp name="JSONPostProcessor.referenceNames">token</stringProp>
-            <stringProp name="JSONPostProcessor.jsonPathExprs">$.data.token</stringProp>
-            <stringProp name="JSONPostProcessor.match_numbers">1</stringProp>
-            <stringProp name="JSONPostProcessor.defaultValues">NOT_FOUND</stringProp>
-          </JSONPostProcessor>
-          <hashTree/>
-        </hashTree>
-        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Questionaire Signup">
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Questionaire Signup" enabled="true">
           <stringProp name="TestPlan.comments">Created from cURL on 2026-07-18T20:40:02.5063088</stringProp>
           <stringProp name="HTTPSampler.domain">krofturg-vlrm-backend-ce6210296b4e.herokuapp.com</stringProp>
           <stringProp name="HTTPSampler.protocol">https</stringProp>
@@ -146,7 +226,7 @@
           <stringProp name="HTTPSampler.implementation">HttpClient4</stringProp>
         </HTTPSamplerProxy>
         <hashTree>
-          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP HeaderManager">
+          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP HeaderManager" enabled="true">
             <collectionProp name="HeaderManager.headers">
               <elementProp name="Content-Type" elementType="Header">
                 <stringProp name="Header.name">Content-Type</stringProp>
@@ -156,7 +236,7 @@
             <stringProp name="TestPlan.comments">Created from cURL on 2026-07-18T20:40:02.5063088</stringProp>
           </HeaderManager>
           <hashTree/>
-          <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Response Assertion">
+          <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Response Assertion" enabled="true">
             <collectionProp name="Asserion.test_strings">
               <stringProp name="51508">400</stringProp>
             </collectionProp>
@@ -167,7 +247,7 @@
           </ResponseAssertion>
           <hashTree/>
         </hashTree>
-        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Register market vendor">
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Register market vendor" enabled="true">
           <stringProp name="TestPlan.comments">Created from cURL on 2026-07-18T22:07:43.3196142</stringProp>
           <stringProp name="HTTPSampler.domain">krofturg-vlrm-backend-ce6210296b4e.herokuapp.com</stringProp>
           <stringProp name="HTTPSampler.protocol">https</stringProp>
@@ -194,7 +274,7 @@
           <stringProp name="HTTPSampler.implementation">HttpClient4</stringProp>
         </HTTPSamplerProxy>
         <hashTree>
-          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP HeaderManager">
+          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP HeaderManager" enabled="true">
             <collectionProp name="HeaderManager.headers">
               <elementProp name="Content-Type" elementType="Header">
                 <stringProp name="Header.name">Content-Type</stringProp>
@@ -204,7 +284,7 @@
             <stringProp name="TestPlan.comments">Created from cURL on 2026-07-18T22:07:43.3196142</stringProp>
           </HeaderManager>
           <hashTree/>
-          <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Response Assertion">
+          <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Response Assertion" enabled="true">
             <collectionProp name="Asserion.test_strings">
               <stringProp name="51508">400</stringProp>
             </collectionProp>
@@ -213,32 +293,6 @@
             <boolProp name="Assertion.assume_success">true</boolProp>
             <intProp name="Assertion.test_type">16</intProp>
           </ResponseAssertion>
-          <hashTree/>
-        </hashTree>
-        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Fetch subscription">
-          <stringProp name="TestPlan.comments">Created from cURL on 2026-07-19T08:00:14.0288632</stringProp>
-          <stringProp name="HTTPSampler.domain">krofturg-vlrm-backend-ce6210296b4e.herokuapp.com</stringProp>
-          <stringProp name="HTTPSampler.protocol">https</stringProp>
-          <stringProp name="HTTPSampler.path">/api/payment/subscription/user/SUB_crf1g9iiou0lix8</stringProp>
-          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
-          <stringProp name="HTTPSampler.method">GET</stringProp>
-          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
-          <boolProp name="HTTPSampler.postBodyRaw">false</boolProp>
-          <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="User Defined Variables">
-            <collectionProp name="Arguments.arguments"/>
-          </elementProp>
-          <stringProp name="HTTPSampler.implementation">HttpClient4</stringProp>
-        </HTTPSamplerProxy>
-        <hashTree>
-          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP HeaderManager">
-            <collectionProp name="HeaderManager.headers">
-              <elementProp name="x-access-token" elementType="Header">
-                <stringProp name="Header.name">x-access-token</stringProp>
-                <stringProp name="Header.value">${token}</stringProp>
-              </elementProp>
-            </collectionProp>
-            <stringProp name="TestPlan.comments">Created from cURL on 2026-07-19T08:00:14.0288632</stringProp>
-          </HeaderManager>
           <hashTree/>
         </hashTree>
         <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Get Industries">
@@ -256,7 +310,7 @@
           <stringProp name="HTTPSampler.implementation">HttpClient4</stringProp>
         </HTTPSamplerProxy>
         <hashTree>
-          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP HeaderManager">
+          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP HeaderManager" enabled="true">
             <collectionProp name="HeaderManager.headers"/>
             <stringProp name="TestPlan.comments">Created from cURL on 2026-07-19T08:19:45.0981939</stringProp>
           </HeaderManager>
@@ -295,7 +349,7 @@
             <collectionProp name="HeaderManager.headers">
               <elementProp name="x-access-token" elementType="Header">
                 <stringProp name="Header.name">x-access-token</stringProp>
-                <stringProp name="Header.value">${token}</stringProp>
+                <stringProp name="Header.value">${__property(token)}</stringProp>
               </elementProp>
               <elementProp name="Content-Type" elementType="Header">
                 <stringProp name="Header.name">Content-Type</stringProp>
@@ -305,7 +359,7 @@
             <stringProp name="TestPlan.comments">Created from cURL on 2026-07-19T08:20:02.2113123</stringProp>
           </HeaderManager>
           <hashTree/>
-          <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Response Assertion">
+          <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Response Assertion" enabled="true">
             <collectionProp name="Asserion.test_strings">
               <stringProp name="51508">400</stringProp>
             </collectionProp>
@@ -316,7 +370,7 @@
           </ResponseAssertion>
           <hashTree/>
         </hashTree>
-        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Resend email verification">
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Resend email verification" enabled="true">
           <stringProp name="TestPlan.comments">Created from cURL on 2026-07-19T08:20:42.214541</stringProp>
           <stringProp name="HTTPSampler.domain">krofturg-vlrm-backend-ce6210296b4e.herokuapp.com</stringProp>
           <stringProp name="HTTPSampler.protocol">https</stringProp>
@@ -340,7 +394,7 @@
           <stringProp name="HTTPSampler.implementation">HttpClient4</stringProp>
         </HTTPSamplerProxy>
         <hashTree>
-          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP HeaderManager">
+          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP HeaderManager" enabled="true">
             <collectionProp name="HeaderManager.headers">
               <elementProp name="Content-Type" elementType="Header">
                 <stringProp name="Header.name">Content-Type</stringProp>
@@ -351,7 +405,7 @@
           </HeaderManager>
           <hashTree/>
         </hashTree>
-        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Forgot Password">
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Forgot Password" enabled="true">
           <stringProp name="TestPlan.comments">Created from cURL on 2026-07-19T08:21:45.0640201</stringProp>
           <stringProp name="HTTPSampler.domain">krofturg-vlrm-backend-ce6210296b4e.herokuapp.com</stringProp>
           <stringProp name="HTTPSampler.protocol">https</stringProp>
@@ -375,7 +429,7 @@
           <stringProp name="HTTPSampler.implementation">HttpClient4</stringProp>
         </HTTPSamplerProxy>
         <hashTree>
-          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP HeaderManager">
+          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP HeaderManager" enabled="true">
             <collectionProp name="HeaderManager.headers">
               <elementProp name="Content-Type" elementType="Header">
                 <stringProp name="Header.name">Content-Type</stringProp>
@@ -386,7 +440,7 @@
           </HeaderManager>
           <hashTree/>
         </hashTree>
-        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Register Quote">
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Register Quote" enabled="true">
           <stringProp name="TestPlan.comments">Created from cURL on 2026-07-19T08:22:12.9735458</stringProp>
           <stringProp name="HTTPSampler.domain">krofturg-vlrm-backend-ce6210296b4e.herokuapp.com</stringProp>
           <stringProp name="HTTPSampler.protocol">https</stringProp>
@@ -417,7 +471,7 @@
           <stringProp name="HTTPSampler.implementation">HttpClient4</stringProp>
         </HTTPSamplerProxy>
         <hashTree>
-          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP HeaderManager">
+          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP HeaderManager" enabled="true">
             <collectionProp name="HeaderManager.headers">
               <elementProp name="Content-Type" elementType="Header">
                 <stringProp name="Header.name">Content-Type</stringProp>
@@ -428,7 +482,7 @@
           </HeaderManager>
           <hashTree/>
         </hashTree>
-        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Upgrade Subscription">
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Upgrade Subscription" enabled="true">
           <stringProp name="HTTPSampler.domain">krofturg-vlrm-backend-ce6210296b4e.herokuapp.com</stringProp>
           <stringProp name="HTTPSampler.protocol">https</stringProp>
           <stringProp name="HTTPSampler.path">/api/payment/upgrade/subscription/PLN_wwjrjhqqf851opi</stringProp>
@@ -449,13 +503,13 @@
               </elementProp>
               <elementProp name="" elementType="Header">
                 <stringProp name="Header.name">x-access-token</stringProp>
-                <stringProp name="Header.value">${token}</stringProp>
+                <stringProp name="Header.value">${__property(token)}</stringProp>
               </elementProp>
             </collectionProp>
           </HeaderManager>
           <hashTree/>
         </hashTree>
-        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Subscribe">
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Subscribe" enabled="true">
           <stringProp name="HTTPSampler.domain">krofturg-vlrm-backend-ce6210296b4e.herokuapp.com</stringProp>
           <stringProp name="HTTPSampler.protocol">https</stringProp>
           <stringProp name="HTTPSampler.path">/api/payment/initiate/subscription/PLN_rfw4cdo321k8pl3</stringProp>
@@ -476,12 +530,12 @@
               </elementProp>
               <elementProp name="" elementType="Header">
                 <stringProp name="Header.name">x-access-token</stringProp>
-                <stringProp name="Header.value">${token}</stringProp>
+                <stringProp name="Header.value">${__property(token)}</stringProp>
               </elementProp>
             </collectionProp>
           </HeaderManager>
           <hashTree/>
-          <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Response Assertion" enabled="true">
+          <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Response Assertion">
             <collectionProp name="Asserion.test_strings">
               <stringProp name="51508">400</stringProp>
             </collectionProp>
@@ -513,32 +567,6 @@
           </HeaderManager>
           <hashTree/>
         </hashTree>
-        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="List Subscriptions">
-          <stringProp name="TestPlan.comments">Created from cURL on 2026-07-19T08:37:08.5991676</stringProp>
-          <stringProp name="HTTPSampler.domain">krofturg-vlrm-backend-ce6210296b4e.herokuapp.com</stringProp>
-          <stringProp name="HTTPSampler.protocol">https</stringProp>
-          <stringProp name="HTTPSampler.path">/api/payment/list/subscriptions</stringProp>
-          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
-          <stringProp name="HTTPSampler.method">GET</stringProp>
-          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
-          <boolProp name="HTTPSampler.postBodyRaw">false</boolProp>
-          <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="User Defined Variables">
-            <collectionProp name="Arguments.arguments"/>
-          </elementProp>
-          <stringProp name="HTTPSampler.implementation">HttpClient4</stringProp>
-        </HTTPSamplerProxy>
-        <hashTree>
-          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP HeaderManager">
-            <collectionProp name="HeaderManager.headers">
-              <elementProp name="x-access-token" elementType="Header">
-                <stringProp name="Header.name">x-access-token</stringProp>
-                <stringProp name="Header.value">${token}</stringProp>
-              </elementProp>
-            </collectionProp>
-            <stringProp name="TestPlan.comments">Created from cURL on 2026-07-19T08:37:08.6001744</stringProp>
-          </HeaderManager>
-          <hashTree/>
-        </hashTree>
         <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Downgrade Subscription">
           <stringProp name="HTTPSampler.domain">krofturg-vlrm-backend-ce6210296b4e.herokuapp.com</stringProp>
           <stringProp name="HTTPSampler.protocol">https</stringProp>
@@ -552,7 +580,7 @@
           </elementProp>
         </HTTPSamplerProxy>
         <hashTree>
-          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP Header Manager">
+          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP Header Manager" enabled="true">
             <collectionProp name="HeaderManager.headers">
               <elementProp name="" elementType="Header">
                 <stringProp name="Header.name">Content-Type</stringProp>
@@ -565,7 +593,7 @@
             </collectionProp>
           </HeaderManager>
           <hashTree/>
-          <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Response Assertion">
+          <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Response Assertion" enabled="true">
             <collectionProp name="Asserion.test_strings">
               <stringProp name="51512">404</stringProp>
             </collectionProp>
@@ -576,7 +604,7 @@
           </ResponseAssertion>
           <hashTree/>
         </hashTree>
-        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Get Current Average Rating">
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Get Current Average Rating" enabled="true">
           <stringProp name="TestPlan.comments">Created from cURL on 2026-07-19T08:43:24.2289343</stringProp>
           <stringProp name="HTTPSampler.domain">krofturg-vlrm-backend-ce6210296b4e.herokuapp.com</stringProp>
           <stringProp name="HTTPSampler.protocol">https</stringProp>
@@ -595,7 +623,7 @@
             <collectionProp name="HeaderManager.headers">
               <elementProp name="x-access-token" elementType="Header">
                 <stringProp name="Header.name">x-access-token</stringProp>
-                <stringProp name="Header.value">${token}</stringProp>
+                <stringProp name="Header.value">${__property(token)}</stringProp>
               </elementProp>
             </collectionProp>
             <stringProp name="TestPlan.comments">Created from cURL on 2026-07-19T08:43:24.2299366</stringProp>
@@ -621,14 +649,14 @@
             <collectionProp name="HeaderManager.headers">
               <elementProp name="x-access-token" elementType="Header">
                 <stringProp name="Header.name">x-access-token</stringProp>
-                <stringProp name="Header.value">${token}</stringProp>
+                <stringProp name="Header.value">${__property(token)}</stringProp>
               </elementProp>
             </collectionProp>
             <stringProp name="TestPlan.comments">Created from cURL on 2026-07-19T08:43:40.5946105</stringProp>
           </HeaderManager>
           <hashTree/>
         </hashTree>
-        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Get vendor Profile">
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Get vendor Profile" enabled="true">
           <stringProp name="TestPlan.comments">Created from cURL on 2026-07-19T08:43:55.0151033</stringProp>
           <stringProp name="HTTPSampler.domain">krofturg-vlrm-backend-ce6210296b4e.herokuapp.com</stringProp>
           <stringProp name="HTTPSampler.protocol">https</stringProp>
@@ -643,7 +671,7 @@
           <stringProp name="HTTPSampler.implementation">HttpClient4</stringProp>
         </HTTPSamplerProxy>
         <hashTree>
-          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP HeaderManager">
+          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP HeaderManager" enabled="true">
             <collectionProp name="HeaderManager.headers">
               <elementProp name="x-temp-token" elementType="Header">
                 <stringProp name="Header.name">x-temp-token</stringProp>
@@ -669,12 +697,12 @@
           <stringProp name="HTTPSampler.implementation">HttpClient4</stringProp>
         </HTTPSamplerProxy>
         <hashTree>
-          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP HeaderManager">
+          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP HeaderManager" enabled="true">
             <collectionProp name="HeaderManager.headers"/>
             <stringProp name="TestPlan.comments">Created from cURL on 2026-07-19T08:44:46.6839563</stringProp>
           </HeaderManager>
           <hashTree/>
-          <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Response Assertion">
+          <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Response Assertion" enabled="true">
             <collectionProp name="Asserion.test_strings">
               <stringProp name="51508">400</stringProp>
             </collectionProp>
@@ -685,9 +713,166 @@
           </ResponseAssertion>
           <hashTree/>
         </hashTree>
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Fetch subscription">
+          <stringProp name="TestPlan.comments">Created from cURL on 2026-07-19T08:00:14.0288632</stringProp>
+          <stringProp name="HTTPSampler.domain">krofturg-vlrm-backend-ce6210296b4e.herokuapp.com</stringProp>
+          <stringProp name="HTTPSampler.protocol">https</stringProp>
+          <stringProp name="HTTPSampler.path">/api/payment/subscription/user/SUB_crf1g9iiou0lix8</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <stringProp name="HTTPSampler.method">GET</stringProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+          <boolProp name="HTTPSampler.postBodyRaw">false</boolProp>
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="User Defined Variables">
+            <collectionProp name="Arguments.arguments"/>
+          </elementProp>
+          <stringProp name="HTTPSampler.implementation">HttpClient4</stringProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <JSR223PreProcessor guiclass="TestBeanGUI" testclass="JSR223PreProcessor" testname="JSR223 PreProcessor" enabled="true">
+            <stringProp name="scriptLanguage">groovy</stringProp>
+            <stringProp name="parameters"></stringProp>
+            <stringProp name="filename"></stringProp>
+            <stringProp name="cacheKey">true</stringProp>
+            <stringProp name="script">import java.net.HttpURLConnection
+import groovy.json.JsonOutput
+import groovy.json.JsonSlurper
+
+def loginUrl = &quot;https://krofturg-vlrm-backend-ce6210296b4e.herokuapp.com/api/auth/client/login&quot;
+
+def conn = (HttpURLConnection) new URL(loginUrl).openConnection()
+conn.setRequestMethod(&quot;POST&quot;)
+conn.setDoOutput(true)
+conn.setRequestProperty(&quot;Content-Type&quot;, &quot;application/json&quot;)
+conn.setConnectTimeout(30000)
+conn.setReadTimeout(30000)
+
+def body = [
+        email: &quot;nomsouzoanya@yahoo.co.uk&quot;,
+        password: &quot;vicecity&quot;
+]
+
+conn.outputStream.withWriter(&quot;UTF-8&quot;) {
+    it &lt;&lt; JsonOutput.toJson(body)
+}
+
+def code = conn.responseCode
+
+def response = (code &gt;= 200 &amp;&amp; code &lt; 300) ?
+        conn.inputStream.getText(&quot;UTF-8&quot;) :
+        conn.errorStream.getText(&quot;UTF-8&quot;)
+
+log.info(&quot;Login Response Code: ${code}&quot;)
+log.info(&quot;Login Response: ${response}&quot;)
+
+if (code == 200) {
+
+    def json = new JsonSlurper().parseText(response)
+
+    vars.put(&quot;token&quot;, json.data.token)
+    vars.put(&quot;refreshToken&quot;, json.data.refreshToken)
+    vars.put(&quot;uId&quot;, json.data.uId)
+
+    log.info(&quot;Token saved successfully&quot;)
+
+} else {
+
+    throw new Exception(&quot;Login failed: ${response}&quot;)
+
+}</stringProp>
+          </JSR223PreProcessor>
+          <hashTree/>
+          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP HeaderManager" enabled="true">
+            <collectionProp name="HeaderManager.headers">
+              <elementProp name="x-access-token" elementType="Header">
+                <stringProp name="Header.name">x-access-token</stringProp>
+                <stringProp name="Header.value">${token}</stringProp>
+              </elementProp>
+            </collectionProp>
+            <stringProp name="TestPlan.comments">Created from cURL on 2026-07-19T08:00:14.0288632</stringProp>
+          </HeaderManager>
+          <hashTree/>
+        </hashTree>
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="List Subscriptions">
+          <stringProp name="TestPlan.comments">Created from cURL on 2026-07-19T08:37:08.5991676</stringProp>
+          <stringProp name="HTTPSampler.domain">krofturg-vlrm-backend-ce6210296b4e.herokuapp.com</stringProp>
+          <stringProp name="HTTPSampler.protocol">https</stringProp>
+          <stringProp name="HTTPSampler.path">/api/payment/list/subscriptions</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <stringProp name="HTTPSampler.method">GET</stringProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+          <boolProp name="HTTPSampler.postBodyRaw">false</boolProp>
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="User Defined Variables">
+            <collectionProp name="Arguments.arguments"/>
+          </elementProp>
+          <stringProp name="HTTPSampler.implementation">HttpClient4</stringProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <JSR223PreProcessor guiclass="TestBeanGUI" testclass="JSR223PreProcessor" testname="JSR223 PreProcessor" enabled="true">
+            <stringProp name="scriptLanguage">groovy</stringProp>
+            <stringProp name="parameters"></stringProp>
+            <stringProp name="filename"></stringProp>
+            <stringProp name="cacheKey">true</stringProp>
+            <stringProp name="script">import java.net.HttpURLConnection
+import groovy.json.JsonOutput
+import groovy.json.JsonSlurper
+
+def loginUrl = &quot;https://krofturg-vlrm-backend-ce6210296b4e.herokuapp.com/api/auth/client/login&quot;
+
+def conn = (HttpURLConnection) new URL(loginUrl).openConnection()
+conn.setRequestMethod(&quot;POST&quot;)
+conn.setDoOutput(true)
+conn.setRequestProperty(&quot;Content-Type&quot;, &quot;application/json&quot;)
+conn.setConnectTimeout(30000)
+conn.setReadTimeout(30000)
+
+def body = [
+    email: &quot;nomsouzoanya@yahoo.co.uk&quot;,
+    password: &quot;vicecity&quot;
+]
+
+conn.outputStream.withWriter(&quot;UTF-8&quot;) { writer -&gt;
+    writer &lt;&lt; JsonOutput.toJson(body)
+}
+
+int responseCode = conn.responseCode
+
+def response = (responseCode &gt;= 200 &amp;&amp; responseCode &lt; 300) ?
+        conn.inputStream.getText(&quot;UTF-8&quot;) :
+        conn.errorStream.getText(&quot;UTF-8&quot;)
+
+log.info(&quot;Login Response Code: ${responseCode}&quot;)
+log.info(&quot;Login Response: ${response}&quot;)
+
+if (responseCode == 200) {
+    def json = new JsonSlurper().parseText(response)
+
+    // Save values as JMeter variables
+    vars.put(&quot;token&quot;, json.data.token.toString())
+    vars.put(&quot;refreshToken&quot;, json.data.refreshToken.toString())
+    vars.put(&quot;uId&quot;, json.data.uId.toString())
+
+    log.info(&quot;Token saved as variable &apos;token&apos;&quot;)
+    log.info(&quot;Token = ${vars.get(&apos;token&apos;)}&quot;)
+
+} else {
+    throw new Exception(&quot;Login failed: ${response}&quot;)
+}</stringProp>
+          </JSR223PreProcessor>
+          <hashTree/>
+          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP HeaderManager" enabled="true">
+            <collectionProp name="HeaderManager.headers">
+              <elementProp name="x-access-token" elementType="Header">
+                <stringProp name="Header.name">x-access-token</stringProp>
+                <stringProp name="Header.value">${token}</stringProp>
+              </elementProp>
+            </collectionProp>
+            <stringProp name="TestPlan.comments">Created from cURL on 2026-07-19T08:37:08.6001744</stringProp>
+          </HeaderManager>
+          <hashTree/>
+        </hashTree>
       </hashTree>
       <ResultCollector guiclass="ViewResultsFullVisualizer" testclass="ResultCollector" testname="View Results Tree">
-        <boolProp name="ResultCollector.error_logging">false</boolProp>
+        <boolProp name="ResultCollector.error_logging">true</boolProp>
         <objProp>
           <name>saveConfig</name>
           <value class="SampleSaveConfiguration">
