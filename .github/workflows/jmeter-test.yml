@@ -1,4 +1,4 @@
-name: Run JMeter Test with Allure
+name: Run JMeter Test with Taurus
 
 on:
   workflow_dispatch:
@@ -14,45 +14,27 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Clean Previous Reports
-        run: |
-          echo "Cleaning previous reports..."
-          rm -rf allure-results
-          rm -rf allure-report
-          rm -rf artifacts
-          rm -f *.jtl
-          rm -f jmeter.log
-
-      - name: Set up Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "17"
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      - name: Install Taurus
-        run: pip install bzt
+      - name: Install Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
 
-      - name: Install Allure CLI
+      - name: Install Taurus
         run: |
-          wget https://github.com/allure-framework/allure2/releases/latest/download/allure-2.34.1.tgz
-          tar -xzf allure-2.34.1.tgz
-          echo "$PWD/allure-2.34.1/bin" >> $GITHUB_PATH
+          pip install bzt
 
       - name: Run JMeter Test
         run: |
           bzt Krofturg.jmx
 
-      - name: Generate Allure Report
-        run: |
-          allure generate allure-results --clean -o allure-report
-
-      - name: Upload Allure Report
+      - name: Upload Taurus Report
         uses: actions/upload-artifact@v4
         with:
-          name: allure-report
-          path: allure-report
+          name: taurus-report
+          path: artifacts/
