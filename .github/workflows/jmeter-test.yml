@@ -1,93 +1,28 @@
-image: eclipse-temurin:17-jdk
+name: JMeter Performance Test
 
-definitions:
-  caches:
-    jmeter: ~/.jmeter-cache
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
 
-  steps:
-    - step: &run-jmeter
-        name: Run JMeter Performance Test
+jobs:
+  jm-test:
+    runs-on: ubuntu-latest
 
-        caches:
-          - jmeter
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-        script:
-          # Install required packages
-          - apt-get update
-          - apt-get install -y curl tar
+      - name: Run JMeter Test
+        uses: rbhadti96/jmeter-action@v1.0.0
+        with:
+          test-file: 'test_plan.jmx'
+          report-output-folder: 'jmeter-reports'
 
-          # Create cache directory
-          - mkdir -p ~/.jmeter-cache
-
-          # Download JMeter if not already cached
-          - |
-            if [ ! -f ~/.jmeter-cache/apache-jmeter-5.6.3.tgz ]; then
-              curl -L https://archive.apache.org/dist/jmeter/binaries/apache-jmeter-5.6.3.tgz \
-                -o ~/.jmeter-cache/apache-jmeter-5.6.3.tgz
-            fi
-
-          # Extract JMeter
-          - tar -xzf ~/.jmeter-cache/apache-jmeter-5.6.3.tgz
-
-          # Configure PATH
-          - export JMETER_HOME=$(pwd)/apache-jmeter-5.6.3
-          - export PATH=$JMETER_HOME/bin:$PATH
-
-          # Verify installation
-          - jmeter --version
-
-          # Use defaults if variables are not supplied
-          - export USERS=${USERS:-1}
-          - export RAMP_UP=${RAMP_UP:-5}
-          - export DURATION=${DURATION:-60}
-
-          # Display execution settings
-          - echo "Users=$USERS"
-          - echo "RampUp=$RAMP_UP"
-          - echo "Duration=$DURATION"
-
-          # Create results folder
-          - mkdir -p results
-
-          # Remove previous outputs
-          - rm -f results/Krofturg.jtl
-          - rm -f results/Krofturg.csv
-          - rm -f results/jmeter.log
-          - rm -rf results/html-report
-
-          # Execute JMeter
-          - |
-            jmeter \
-              -n \
-              -t Krofturg.jmx \
-              -Jusers=$USERS \
-              -Jrampup=$RAMP_UP \
-              -Jduration=$DURATION \
-              -l results/Krofturg.jtl \
-              -j results/jmeter.log \
-              -e \
-              -o results/html-report
-
-          # Create CSV copy
-          - cp results/Krofturg.jtl results/Krofturg.csv
-
-        artifacts:
-          - results/**
-
-pipelines:
-  default:
-    - step: *run-jmeter
-
-  custom:
-    JMeter-Performance-Test:
-      - variables:
-          - name: USERS
-            default: "1"
-
-          - name: RAMP_UP
-            default: "5"
-
-          - name: DURATION
-            default: "60"
-
-      - step: *run-jmeter
+      - name: Upload JMeter HTML Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: jmeter-performance-report
+          path: jmeter-reports/
