@@ -1,40 +1,54 @@
-name: Run JMeter Test with Taurus
+name: Run JMeter Test
 
 on:
-  workflow_dispatch:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
-  performance-test:
+  jmeter-test:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Install Java
+      - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "17"
+          java-version: '17'
 
-      - name: Install Taurus
+      - name: Download Apache JMeter
         run: |
-          pip install bzt
+          JMETER_VERSION=5.6.3
+          wget https://archive.apache.org/dist/jmeter/binaries/apache-jmeter-${JMETER_VERSION}.tgz
+          tar -xzf apache-jmeter-${JMETER_VERSION}.tgz
+          echo "$PWD/apache-jmeter-${JMETER_VERSION}/bin" >> $GITHUB_PATH
+
+      - name: Verify JMeter Installation
+        run: jmeter --version
+
+      - name: Create Results Directory
+        run: mkdir -p results
 
       - name: Run JMeter Test
         run: |
-          bzt Krofturg.jmx
+          jmeter -n \
+            -t Krofturg.jmx \
+            -l results/results.jtl \
+            -e \
+            -o results/report
 
-      - name: Upload Taurus Report
+      - name: Upload JTL Results
         uses: actions/upload-artifact@v4
         with:
-          name: taurus-report
-          path: artifacts/
+          name: jmeter-results
+          path: results/results.jtl
+
+      - name: Upload HTML Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: jmeter-html-report
+          path: results/report
